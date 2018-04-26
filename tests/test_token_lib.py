@@ -3,7 +3,7 @@ import sys
 import time
 
 sys.path.extend(["../"])
-from bbc1.app import id_lib, token_lib
+from bbc1.lib import id_lib, token_lib
 from bbc1.core import bbc_app
 from bbc1.core import bbclib
 from bbc1.core.bbc_config import DEFAULT_CORE_PORT
@@ -23,8 +23,10 @@ def setup():
 
     domain_id = bbclib.get_new_id("test_token_lib", include_timestamp=False)
 
-    tmpclient = bbc_app.BBcAppClient(port=DEFAULT_CORE_PORT, loglevel="all")
-    tmpclient.domain_setup(domain_id, "simple_cluster")
+    #tmpclient = bbc_app.BBcAppClient(port=DEFAULT_CORE_PORT, loglevel="all")
+    tmpclient = bbc_app.BBcAppClient(port=DEFAULT_CORE_PORT, multiq=False, loglevel="all")
+    #tmpclient.domain_setup(domain_id, "simple_cluster")
+    tmpclient.domain_setup(domain_id)
     tmpclient.callback.synchronize()
     tmpclient.unregister_from_core()
 
@@ -848,7 +850,8 @@ def test_store():
 
     (mint_id, keypairs) = idPubkeyMap.create_user_id(num_pubkeys=1)
 
-    app = bbc_app.BBcAppClient(port=DEFAULT_CORE_PORT, loglevel="all")
+    #app = bbc_app.BBcAppClient(port=DEFAULT_CORE_PORT, loglevel="all")
+    app = bbc_app.BBcAppClient(port=DEFAULT_CORE_PORT, multiq=False, loglevel="all")
     app.set_user_id(mint_id)
     app.set_domain_id(domain_id)
     app.set_callback(bbc_app.Callback())
