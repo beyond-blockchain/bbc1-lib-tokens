@@ -916,7 +916,10 @@ class BBcMint:
         self.mint_id = mint_id
         self.user_id = user_id
         self.idPublickeyMap = idPublickeyMap
+        #self.app = bbc_app.BBcAppClient(port=DEFAULT_CORE_PORT,
+        #                                loglevel=loglevel)
         self.app = bbc_app.BBcAppClient(port=DEFAULT_CORE_PORT,
+                                        multiq=False,
                                         loglevel=loglevel)
         self.app.set_user_id(user_id)
         self.app.set_domain_id(domain_id)
