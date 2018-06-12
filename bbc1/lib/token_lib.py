@@ -622,6 +622,7 @@ class Store:
                 'token_tx_id_table',
                 token_tx_id_table_definition,
                 primary_key=0, indices=[1])
+        self.independent = False
         self.store_ids = (
             self.get_store_id(Store.SEED_CONDITION),
             self.get_store_id(Store.SEED_CURRENCY_SPEC)
@@ -872,12 +873,13 @@ class Store:
             return None
         tx = bbclib.BBcTransaction()
         tx.deserialize(rows[0][0])
-        self.db.exec_sql(
-            self.domain_id,
-            NAME_OF_DB,
-            'delete from token_tx_id_table where tx_id=?',
-            tx_id
-        )
+        if self.independent:
+            self.db.exec_sql(
+                self.domain_id,
+                NAME_OF_DB,
+                'delete from token_tx_id_table where tx_id=?',
+                tx_id
+            )
         return tx
 
 
@@ -914,8 +916,6 @@ class BBcMint:
         self.mint_id = mint_id
         self.user_id = user_id
         self.idPublickeyMap = idPublickeyMap
-        #self.app = bbc_app.BBcAppClient(port=DEFAULT_CORE_PORT,
-        #                                loglevel=loglevel)
         self.app = bbc_app.BBcAppClient(port=DEFAULT_CORE_PORT,
                                         multiq=False,
                                         loglevel=loglevel)
@@ -974,9 +974,9 @@ class BBcMint:
                 self.idPublickeyMap)
 
 
-    def make_event(self, ref_indice, user_id, body):
+    def make_event(self, ref_indices, user_id, body):
         event = bbclib.BBcEvent(asset_group_id=self.mint_id)
-        for i in ref_indice:
+        for i in ref_indices:
             event.add(reference_index=i)
         event.add(mandatory_approver=self.mint_id)
         event.add(mandatory_approver=user_id)
@@ -1009,9 +1009,61 @@ class BBcMint:
                 self.idPublickeyMap)
 
 
-#    def swap(self, counter_mint, this_user_id, that_user_id,
-#                this_amount, that_amount):
+    def swap(self, counter_mint, this_user_id, that_user_id,
+                this_amount, that_amount, keypair_this=None, keypair_that=None,
+                keypair_mint=None, keypair_counter_mint=None):
+        tx = self.transfer(this_user_id, that_user_id, this_amount)
+        tx_counter = counter_mint.transfer(that_user_id, this_user_id,
+                that_amount)
 
+        base_ref_index = len(tx.references)
+
+        for ref in tx_counter.references:
+            ref_new = bbclib.BBcReference(asset_group_id=ref.asset_group_id,
+                    transaction=tx,
+                    ref_transaction=ref.ref_transaction,
+                    event_index_in_ref=ref.event_index_in_ref)
+            tx.add(reference=ref_new)
+
+        for event in tx_counter.events:
+            ref_indices = []
+            for index in event.reference_indices:
+                ref_indices.append(base_ref_index + index)
+            event.reference_indices = ref_indices
+            tx.add(event=event)
+
+        if keypair_this is None:
+            return tx
+
+        dest = []
+
+        if keypair_that is None:
+            dest.add(that_user_id)
+        else:
+            self.store.sign(tx, that_user_id, keypair_that)
+
+        if keypair_mint is None:
+            dest.add(self.mint_id)
+        else:
+            self.store.sign(tx, self.mint_id, keypair_mint)
+
+        if keypair_counter_mint is None:
+            dest.add(counter_mint.mint_id)
+        else:
+            self.store.sign(tx, counter_mint.mint_id, keypair_counter_mint)
+
+        # not tested
+        if len(dest) > 0:
+            self.app.gather_signatures(tx, destinations=dest)
+            for i in range(len(dest)):
+                res = self.app.callback.synchronize()
+                if res[KeyType.status] < ESUCCESS:
+                    raise RuntimeError(res[KeyType.reason].decode())
+                result = res[KeyType.result]
+                tx.add_signature(result[1], signature=result[2])
+
+        return self.store.sign_and_insert(tx, this_user_id, keypair_this,
+                self.idPublickeyMap)
 
 
     def transfer(self, from_user_id, to_user_id, amount, keypair_from=None,

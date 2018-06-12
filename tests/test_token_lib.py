@@ -11,15 +11,19 @@ from bbc1.core.bbc_config import DEFAULT_CORE_PORT
 
 domain_id = None
 mint_id = None
+mint_id_counter = None
 idPubkeyMap = None
 keypairs = None
+keypairs_counter = None
 
 
 def setup():
     global domain_id
     global mint_id
+    global mint_id_counter
     global idPubkeyMap
     global keypairs
+    global keypairs_counter
 
     domain_id = bbclib.get_new_id("test_token_lib", include_timestamp=False)
 
@@ -32,6 +36,8 @@ def setup():
 
     idPubkeyMap = id_lib.BBcIdPublickeyMap(domain_id)
     (mint_id, keypairs) = idPubkeyMap.create_user_id(num_pubkeys=1)
+    (mint_id_counter, keypairs_counter) = idPubkeyMap.create_user_id(
+            num_pubkeys=1)
 
 
 def test_fraction():
@@ -1012,6 +1018,71 @@ def test_mint_sign_requested():
 
     assert mint.get_balance_of(user_a_id) == 810
     assert mint.get_balance_of(user_b_id) == 200
+
+
+def test_swap():
+
+    currency_spec = token_lib.CurrencySpec({
+        'name': "BBc Point",
+        'symbol': "BBP",
+    })
+
+    currency_spec_counter = token_lib.CurrencySpec({
+        'name': "BBX Point",
+        'symbol': "BBX",
+    })
+
+    mint = token_lib.BBcMint(domain_id, mint_id, mint_id, idPubkeyMap)
+    mint.set_condition(0, keypair=keypairs[0])
+    mint.set_currency_spec(currency_spec, keypair=keypairs[0])
+
+    counter_mint = token_lib.BBcMint(domain_id, mint_id_counter,
+            mint_id_counter, idPubkeyMap)
+    counter_mint.set_condition(0, keypair=keypairs_counter[0])
+    counter_mint.set_currency_spec(currency_spec_counter,
+            keypair=keypairs_counter[0])
+
+    (user_a_id, keypairs_a) = idPubkeyMap.create_user_id(num_pubkeys=1)
+    (user_b_id, keypairs_b) = idPubkeyMap.create_user_id(num_pubkeys=1)
+
+    mint.issue(user_a_id, 1000, keypair=keypairs[0])
+    counter_mint.issue(user_b_id, 3000, keypair=keypairs_counter[0])
+
+    assert mint.get_balance_of(user_a_id) == 1000
+    assert counter_mint.get_balance_of(user_b_id) == 3000
+
+    mint.swap(counter_mint, user_a_id, user_b_id, 100, 300,
+                    keypair_this=keypairs_a[0], keypair_that=keypairs_b[0],
+                    keypair_mint=keypairs[0],
+                    keypair_counter_mint=keypairs_counter[0])
+
+    assert mint.get_balance_of(user_a_id) == 900
+    assert mint.get_balance_of(user_b_id) == 100
+    assert counter_mint.get_balance_of(user_a_id) == 300
+    assert counter_mint.get_balance_of(user_b_id) == 2700
+
+    mint.issue(user_a_id, 10, keypair=keypairs[0])
+
+    assert mint.get_balance_of(user_a_id) == 910
+    assert mint.get_balance_of(user_b_id) == 100
+
+    mint.transfer(user_a_id, user_b_id, 100,
+                    keypair_from=keypairs_a[0], keypair_mint=keypairs[0])
+
+    assert mint.get_balance_of(user_a_id) == 810
+    assert mint.get_balance_of(user_b_id) == 200
+
+    counter_mint.issue(user_a_id, 10, keypair=keypairs_counter[0])
+
+    assert counter_mint.get_balance_of(user_a_id) == 310
+    assert counter_mint.get_balance_of(user_b_id) == 2700
+
+    counter_mint.transfer(user_a_id, user_b_id, 100,
+                    keypair_from=keypairs_a[0],
+                    keypair_mint=keypairs_counter[0])
+
+    assert counter_mint.get_balance_of(user_a_id) == 210
+    assert counter_mint.get_balance_of(user_b_id) == 2800
 
 
 # end of tests/test_token_lib.py
