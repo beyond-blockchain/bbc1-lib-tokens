@@ -1013,24 +1013,8 @@ class BBcMint:
                 this_amount, that_amount, keypair_this=None, keypair_that=None,
                 keypair_mint=None, keypair_counter_mint=None):
         tx = self.transfer(this_user_id, that_user_id, this_amount)
-        tx_counter = counter_mint.transfer(that_user_id, this_user_id,
-                that_amount)
-
-        base_ref_index = len(tx.references)
-
-        for ref in tx_counter.references:
-            ref_new = bbclib.BBcReference(asset_group_id=ref.asset_group_id,
-                    transaction=tx,
-                    ref_transaction=ref.ref_transaction,
-                    event_index_in_ref=ref.event_index_in_ref)
-            tx.add(reference=ref_new)
-
-        for event in tx_counter.events:
-            ref_indices = []
-            for index in event.reference_indices:
-                ref_indices.append(base_ref_index + index)
-            event.reference_indices = ref_indices
-            tx.add(event=event)
+        counter_mint.transfer(that_user_id, this_user_id, that_amount,
+                transaction=tx)
 
         if keypair_this is None:
             return tx
@@ -1066,9 +1050,15 @@ class BBcMint:
                 self.idPublickeyMap)
 
 
-    def transfer(self, from_user_id, to_user_id, amount, keypair_from=None,
-            keypair_mint=None):
-        tx = bbclib.BBcTransaction()
+    def transfer(self, from_user_id, to_user_id, amount, transaction=None,
+            keypair_from=None, keypair_mint=None):
+        if transaction is None:
+            tx = bbclib.BBcTransaction()
+            base_refs = 0
+        else:
+            tx = transaction
+            base_refs = len(tx.references)
+
         sorted_tuples = self.store.get_sorted_utxo_list(from_user_id,
                 tx.timestamp)
         num_refs = 0
@@ -1097,7 +1087,7 @@ class BBcMint:
                     found = True
                     t[0] += sorted_tuples[i][0]
                     t[1] += body.value_specified
-                    t[4].append(i)
+                    t[4].append(base_refs + i)
                     break
             if found == False:
                 spec_tuples.append([
@@ -1105,7 +1095,7 @@ class BBcMint:
                     body.value_specified,
                     body.time_of_origin,
                     body.variation_specs,
-                    [i]
+                    [base_refs + i]
                 ])
 
         for i, t in enumerate(spec_tuples):
