@@ -23,6 +23,7 @@ sys.path.append("../../")
 
 from bbc1.lib import app_support_lib
 from bbc1.core import bbclib
+from bbc1.core.libs import bbclib_utils
 from bbc1.core import logger, bbc_app
 from bbc1.core.bbc_error import *
 from bbc1.core.message_key_types import KeyType
@@ -67,9 +68,9 @@ class Fraction(fractions.Fraction):
     @staticmethod
     def from_serialized_data(ptr, data):
         try:
-            ptr, sign = bbclib.get_n_byte_int(ptr, 1, data)
-            ptr, numerator = bbclib.get_n_byte_int(ptr, 2, data)
-            ptr, denominator = bbclib.get_n_byte_int(ptr, 2, data)
+            ptr, sign = bbclib_utils.get_n_byte_int(ptr, 1, data)
+            ptr, numerator = bbclib_utils.get_n_byte_int(ptr, 2, data)
+            ptr, denominator = bbclib_utils.get_n_byte_int(ptr, 2, data)
         except:
             raise
         if sign > 0:
@@ -83,12 +84,12 @@ class Fraction(fractions.Fraction):
 
     def serialize(self):
         if self.numerator < 0:
-            dat = bytearray(bbclib.to_1byte(1))
-            dat.extend(bbclib.to_2byte(-self.numerator))
+            dat = bytearray(bbclib_utils.to_1byte(1))
+            dat.extend(bbclib_utils.to_2byte(-self.numerator))
         else:
-            dat = bytearray(bbclib.to_1byte(0))
-            dat.extend(bbclib.to_2byte(self.numerator))
-        dat.extend(bbclib.to_2byte(self.denominator))
+            dat = bytearray(bbclib_utils.to_1byte(0))
+            dat.extend(bbclib_utils.to_2byte(self.numerator))
+        dat.extend(bbclib_utils.to_2byte(self.denominator))
         return bytes(dat)
 
 
@@ -148,12 +149,12 @@ class Variation:
     @staticmethod
     def from_serialized_data(ptr, data):
         try:
-            ptr, condition = bbclib.get_n_byte_int(ptr, 1, data)
-            ptr, type = bbclib.get_n_byte_int(ptr, 1, data)
+            ptr, condition = bbclib_utils.get_n_byte_int(ptr, 1, data)
+            ptr, type = bbclib_utils.get_n_byte_int(ptr, 1, data)
             ptr, rate = Fraction.from_serialized_data(ptr, data)
             ptr, rate_to_stop = Fraction.from_serialized_data(ptr, data)
-            ptr, time_unit = bbclib.get_n_byte_int(ptr, 8, data)
-            ptr, expire_after = bbclib.get_n_byte_int(ptr, 8, data)
+            ptr, time_unit = bbclib_utils.get_n_byte_int(ptr, 8, data)
+            ptr, expire_after = bbclib_utils.get_n_byte_int(ptr, 8, data)
         except:
             raise
         return ptr, Variation(condition, type, rate, rate_to_stop, time_unit,
@@ -190,12 +191,12 @@ class Variation:
 
 
     def serialize(self):
-        dat = bytearray(bbclib.to_1byte(self.condition))
-        dat.extend(bbclib.to_1byte(self.type))
+        dat = bytearray(bbclib_utils.to_1byte(self.condition))
+        dat.extend(bbclib_utils.to_1byte(self.type))
         dat.extend(self.rate.serialize())
         dat.extend(self.rate_to_stop.serialize())
-        dat.extend(bbclib.to_8byte(self.time_unit))
-        dat.extend(bbclib.to_8byte(self.expire_after))
+        dat.extend(bbclib_utils.to_8byte(self.time_unit))
+        dat.extend(bbclib_utils.to_8byte(self.expire_after))
         return bytes(dat)
 
 
@@ -223,10 +224,10 @@ class BaseAssetBody:
     @staticmethod
     def from_serialized_data(ptr, data):
         try:
-            ptr, type = bbclib.get_n_byte_int(ptr, 1, data)
-            ptr, value_specified = bbclib.get_n_byte_int(ptr, 8, data)
-            ptr, time_of_origin = bbclib.get_n_byte_int(ptr, 8, data)
-            ptr, count = bbclib.get_n_byte_int(ptr, 1, data)
+            ptr, type = bbclib_utils.get_n_byte_int(ptr, 1, data)
+            ptr, value_specified = bbclib_utils.get_n_byte_int(ptr, 8, data)
+            ptr, time_of_origin = bbclib_utils.get_n_byte_int(ptr, 8, data)
+            ptr, count = bbclib_utils.get_n_byte_int(ptr, 1, data)
             variation_specs = []
             for i in range(count):
                 ptr, variation = Variation.from_serialized_data(ptr, data)
@@ -302,10 +303,10 @@ class BaseAssetBody:
 
 
     def serialize(self):
-        dat = bytearray(bbclib.to_1byte(self.type))
-        dat.extend(bbclib.to_8byte(self.value_specified))
-        dat.extend(bbclib.to_8byte(self.time_of_origin))
-        dat.extend(bbclib.to_1byte(len(self.variation_specs)))
+        dat = bytearray(bbclib_utils.to_1byte(self.type))
+        dat.extend(bbclib_utils.to_8byte(self.value_specified))
+        dat.extend(bbclib_utils.to_8byte(self.time_of_origin))
+        dat.extend(bbclib_utils.to_1byte(len(self.variation_specs)))
         for variation in self.variation_specs:
             dat.extend(variation.serialize())
         return bytes(dat)
@@ -503,20 +504,20 @@ class CurrencySpec:
     @staticmethod
     def from_serialized_data(ptr, data):
         try:
-            ptr, version = bbclib.get_n_byte_int(ptr, 2, data)
-            ptr, size = bbclib.get_n_byte_int(ptr, 2, data)
-            ptr, v = bbclib.get_n_bytes(ptr, size, data)
+            ptr, version = bbclib_utils.get_n_byte_int(ptr, 2, data)
+            ptr, size = bbclib_utils.get_n_byte_int(ptr, 2, data)
+            ptr, v = bbclib_utils.get_n_bytes(ptr, size, data)
             name = v.decode()
-            ptr, size = bbclib.get_n_byte_int(ptr, 1, data)
-            ptr, v = bbclib.get_n_bytes(ptr, size, data)
+            ptr, size = bbclib_utils.get_n_byte_int(ptr, 1, data)
+            ptr, v = bbclib_utils.get_n_bytes(ptr, size, data)
             symbol = v.decode()
-            ptr, decimal = bbclib.get_n_byte_int(ptr, 1, data)
-            ptr, count = bbclib.get_n_byte_int(ptr, 1, data)
+            ptr, decimal = bbclib_utils.get_n_byte_int(ptr, 1, data)
+            ptr, count = bbclib_utils.get_n_byte_int(ptr, 1, data)
             variation_specs = []
             for i in range(count):
                 ptr, variation = Variation.from_serialized_data(ptr, data)
                 variation_specs.append(variation)
-            ptr, v = bbclib.get_n_byte_int(ptr, 2, data)
+            ptr, v = bbclib_utils.get_n_byte_int(ptr, 2, data)
             option_witnesses_required = \
                     v & CurrencySpec.O_BIT_WITNESSES_REQUIRED != 0
             option_expiration_rebased = \
@@ -534,16 +535,16 @@ class CurrencySpec:
 
 
     def serialize(self):
-        dat = bytearray(bbclib.to_2byte(self.version))
+        dat = bytearray(bbclib_utils.to_2byte(self.version))
         string = self.name.encode()
-        dat.extend(bbclib.to_2byte(len(string)))
+        dat.extend(bbclib_utils.to_2byte(len(string)))
         dat.extend(string)
         string = self.symbol.encode()
-        dat.extend(bbclib.to_1byte(len(string)))
+        dat.extend(bbclib_utils.to_1byte(len(string)))
         dat.extend(string)
-        dat.extend(bbclib.to_1byte(self.decimal))
+        dat.extend(bbclib_utils.to_1byte(self.decimal))
 
-        dat.extend(bbclib.to_1byte(len(self.variation_specs)))
+        dat.extend(bbclib_utils.to_1byte(len(self.variation_specs)))
         for variation in self.variation_specs:
             dat.extend(variation.serialize())
 
@@ -554,7 +555,7 @@ class CurrencySpec:
             options |= CurrencySpec.O_BIT_EXPIRATION_REBASED
         if self.option_conditions_irreversible:
             options |= CurrencySpec.O_BIT_CONDITIONS_IRREVERSIBLE
-        dat.extend(bbclib.to_2byte(options))
+        dat.extend(bbclib_utils.to_2byte(options))
         return bytes(dat)
 
 
@@ -567,14 +568,14 @@ class ConditionAssetBody:
     @staticmethod
     def from_serialized_data(ptr, data):
         try:
-            ptr, condition = bbclib.get_n_byte_int(ptr, 1, data)
+            ptr, condition = bbclib_utils.get_n_byte_int(ptr, 1, data)
         except:
             raise
         return ptr, ConditionAssetBody(condition)
 
 
     def serialize(self):
-        dat = bytearray(bbclib.to_1byte(self.condition))
+        dat = bytearray(bbclib_utils.to_1byte(self.condition))
         return bytes(dat)
 
 
@@ -681,7 +682,7 @@ class Store:
         res = self.app.callback.synchronize()
         if res[KeyType.status] < ESUCCESS:
             raise ValueError('not found')
-        tx = bbclib.BBcTransaction(deserialize=res[KeyType.transactions][0])
+        tx, fmt = bbclib.deserialize(res[KeyType.transactions][0])
         return tx.events[0].asset.asset_body
 
 
@@ -715,7 +716,8 @@ class Store:
         res = self.app.callback.synchronize()
         if res[KeyType.status] < ESUCCESS:
             raise ValueError('not found')
-        return bbclib.BBcTransaction(deserialize=res[KeyType.transaction_data])
+        tx, fmt = bbclib.deserialize(res[KeyType.transaction_data])
+        return tx
 
 
     def insert(self, tx, user_id, idPublickeyMap):
@@ -757,7 +759,7 @@ class Store:
             NAME_OF_DB,
             'insert into token_tx_id_table values (?, ?)',
             tx_id,
-            tx.serialize()
+            bbclib.serialize(tx)
         )
 
 
@@ -824,8 +826,7 @@ class Store:
                     asset_group_id=self.mint_id, user_id=store_id)
             res = self.app.callback.synchronize()
             if res[KeyType.status] >= ESUCCESS:
-                reftx = bbclib.BBcTransaction(
-                        deserialize=res[KeyType.transactions][0])
+                reftx, fmt = bbclib.deserialize(res[KeyType.transactions][0])
         else:
             reftx = None
 
@@ -846,7 +847,7 @@ class Store:
 
 
     def sign(self, transaction, user_id, keypair):
-        sig = transaction.sign(key_type=bbclib.KeyType.ECDSA_SECP256k1,
+        sig = transaction.sign(
                 private_key=keypair.private_key,
                 public_key=keypair.public_key)
         transaction.add_signature(user_id=user_id, signature=sig)
@@ -871,8 +872,7 @@ class Store:
         )
         if len(rows) <= 0:
             return None
-        tx = bbclib.BBcTransaction()
-        tx.deserialize(rows[0][0])
+        tx, fmt = bbclib.deserialize(rows[0][0])
         if self.independent:
             self.db.exec_sql(
                 self.domain_id,
@@ -1161,8 +1161,7 @@ class MintCallback(bbc_app.Callback):
             self.mint.app.sendback_denial_of_sign(source_user_id,
                     'keypair is unset')
 
-        tx = bbclib.BBcTransaction()
-        tx.deserialize(dat[KeyType.transaction_data])
+        tx, fmt = bbclib.deserialize(dat[KeyType.transaction_data])
 
         # FIXME: check validity
 
