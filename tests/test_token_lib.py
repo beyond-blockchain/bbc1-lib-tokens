@@ -35,8 +35,8 @@ def setup():
     tmpclient.unregister_from_core()
 
     idPubkeyMap = id_lib.BBcIdPublickeyMap(domain_id)
-    (mint_id, keypairs) = idPubkeyMap.create_user_id(num_pubkeys=1)
-    (mint_id_counter, keypairs_counter) = idPubkeyMap.create_user_id(
+    mint_id, keypairs = idPubkeyMap.create_user_id(num_pubkeys=1)
+    mint_id_counter, keypairs_counter = idPubkeyMap.create_user_id(
             num_pubkeys=1)
 
 
@@ -854,7 +854,7 @@ def test_condition_asset_body():
 
 def test_store():
 
-    (mint_id, keypairs) = idPubkeyMap.create_user_id(num_pubkeys=1)
+    mint_id, keypairs = idPubkeyMap.create_user_id(num_pubkeys=1)
 
     #app = bbc_app.BBcAppClient(port=DEFAULT_CORE_PORT, loglevel="all")
     app = bbc_app.BBcAppClient(port=DEFAULT_CORE_PORT, multiq=False, loglevel="all")
@@ -892,8 +892,8 @@ def test_mint():
     assert mint.get_condition() == 0
     assert mint.get_currency_spec() == currency_spec
 
-    (user_a_id, keypairs_a) = idPubkeyMap.create_user_id(num_pubkeys=1)
-    (user_b_id, keypairs_b) = idPubkeyMap.create_user_id(num_pubkeys=1)
+    user_a_id, keypairs_a = idPubkeyMap.create_user_id(num_pubkeys=1)
+    user_b_id, keypairs_b = idPubkeyMap.create_user_id(num_pubkeys=1)
 
     mint.issue(user_a_id, 1000, keypair=keypairs[0])
 
@@ -943,8 +943,8 @@ def test_mint_depreciation():
     assert mint.get_condition() == 0
     assert mint.get_currency_spec() == currency_spec
 
-    (user_a_id, keypairs_a) = idPubkeyMap.create_user_id(num_pubkeys=1)
-    (user_b_id, keypairs_b) = idPubkeyMap.create_user_id(num_pubkeys=1)
+    user_a_id, keypairs_a = idPubkeyMap.create_user_id(num_pubkeys=1)
+    user_b_id, keypairs_b = idPubkeyMap.create_user_id(num_pubkeys=1)
 
     mint.issue(user_a_id, 100000, keypair=keypairs[0])
 
@@ -989,8 +989,8 @@ def test_mint_sign_requested():
     assert mint.get_condition() == 0
     assert mint.get_currency_spec() == currency_spec
 
-    (user_a_id, keypairs_a) = idPubkeyMap.create_user_id(num_pubkeys=1)
-    (user_b_id, keypairs_b) = idPubkeyMap.create_user_id(num_pubkeys=1)
+    user_a_id, keypairs_a = idPubkeyMap.create_user_id(num_pubkeys=1)
+    user_b_id, keypairs_b = idPubkeyMap.create_user_id(num_pubkeys=1)
 
     mint_a = token_lib.BBcMint(domain_id, mint_id, user_a_id, idPubkeyMap)
     mint_a.store.set_db_online(False)
@@ -1042,8 +1042,8 @@ def test_swap():
     counter_mint.set_currency_spec(currency_spec_counter,
             keypair=keypairs_counter[0])
 
-    (user_a_id, keypairs_a) = idPubkeyMap.create_user_id(num_pubkeys=1)
-    (user_b_id, keypairs_b) = idPubkeyMap.create_user_id(num_pubkeys=1)
+    user_a_id, keypairs_a = idPubkeyMap.create_user_id(num_pubkeys=1)
+    user_b_id, keypairs_b = idPubkeyMap.create_user_id(num_pubkeys=1)
 
     mint.issue(user_a_id, 1000, keypair=keypairs[0])
     counter_mint.issue(user_b_id, 3000, keypair=keypairs_counter[0])
