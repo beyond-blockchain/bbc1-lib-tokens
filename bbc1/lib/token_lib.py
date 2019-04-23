@@ -1022,17 +1022,17 @@ class BBcMint:
         dest = []
 
         if keypair_that is None:
-            dest.add(that_user_id)
+            dest.append(that_user_id)
         else:
             self.store.sign(tx, that_user_id, keypair_that)
 
         if keypair_mint is None:
-            dest.add(self.mint_id)
+            dest.append(self.mint_id)
         else:
             self.store.sign(tx, self.mint_id, keypair_mint)
 
         if keypair_counter_mint is None:
-            dest.add(counter_mint.mint_id)
+            dest.append(counter_mint.mint_id)
         else:
             self.store.sign(tx, counter_mint.mint_id, keypair_counter_mint)
 
