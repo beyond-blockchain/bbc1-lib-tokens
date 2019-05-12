@@ -22,6 +22,7 @@ import time
 sys.path.append("../../")
 
 from bbc1.lib import app_support_lib
+from bbc1.lib.app_support_lib import get_timestamp_in_seconds
 from bbc1.core import bbclib
 from bbc1.core.libs import bbclib_utils
 from bbc1.core import logger, bbc_app
@@ -958,7 +959,7 @@ class BBcMint:
         tx = bbclib.make_transaction(event_num=1)
         tx.events[0].asset_group_id = self.mint_id
         if time_of_origin is None:
-            time_of_origin = tx.timestamp
+            time_of_origin = get_timestamp_in_seconds(tx)
         tx.events[0].asset.add(user_id=to_user_id, asset_body=IssuedAssetBody(
                 amount, time_of_origin,
                 self.currency_spec.variation_specs).serialize())
@@ -1060,7 +1061,7 @@ class BBcMint:
             base_refs = len(tx.references)
 
         sorted_tuples = self.store.get_sorted_utxo_list(from_user_id,
-                tx.timestamp)
+                get_timestamp_in_seconds(tx))
         num_refs = 0
         value = 0
         for t in sorted_tuples:
@@ -1112,7 +1113,7 @@ class BBcMint:
             v = (t[1] * (t[0] + amount)) // t[0]
 
             body = BaseAssetBody(BaseAssetBody.T_VALUE, v, t[2], t[3])
-            while body.get_effective_value(tx.timestamp,
+            while body.get_effective_value(get_timestamp_in_seconds(tx),
                     self.store.get_condition()) < t[0] + amount and \
                     body.value_specified < t[1]:
                 body.value_specified += 1
