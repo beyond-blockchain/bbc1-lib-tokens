@@ -17,6 +17,7 @@ limitations under the License.
 import fractions
 import hashlib
 import sys
+import threading
 import time
 
 sys.path.append("../../")
@@ -608,12 +609,13 @@ class Store:
     SEED_CONDITION     = '.condition'
     SEED_CURRENCY_SPEC = '.currency_spec'
 
+    lock = threading.Lock()
+
 
     def __init__(self, domain_id, mint_id, app):
         self.domain_id = domain_id
         self.mint_id = mint_id
         self.app = app
-        self.db_online = True
         self.db = app_support_lib.Database()
         self.db.setup_db(domain_id, NAME_OF_DB)
         self.db.create_table_in_db(domain_id, NAME_OF_DB,
@@ -624,7 +626,6 @@ class Store:
                 'token_tx_id_table',
                 token_tx_id_table_definition,
                 primary_key=0, indices=[1])
-        self.independent = False
         self.store_ids = (
             self.get_store_id(Store.SEED_CONDITION),
             self.get_store_id(Store.SEED_CURRENCY_SPEC)
@@ -632,8 +633,6 @@ class Store:
 
 
     def delete_utxo(self, tx_id, idx):
-        if self.db_online is False:
-            return None
         return self.db.exec_sql(
             self.domain_id,
             NAME_OF_DB,
@@ -753,15 +752,25 @@ class Store:
 
 
     def push_tx(self, tx_id, tx):
-        if self.db_online is False:
-            return
-        self.db.exec_sql(
+
+        Store.lock.acquire()
+
+        rows = self.db.exec_sql(
             self.domain_id,
             NAME_OF_DB,
-            'insert into token_tx_id_table values (?, ?)',
-            tx_id,
-            bbclib.serialize(tx)
+            'select rowid from token_tx_id_table where tx_id=?',
+            tx_id
         )
+        if len(rows) <= 0:
+            self.db.exec_sql(
+                self.domain_id,
+                NAME_OF_DB,
+                'insert into token_tx_id_table values (?, ?)',
+                tx_id,
+                bbclib.serialize(tx)
+            )
+
+        Store.lock.release()
 
 
     def read_utxo_list(self, user_id):
@@ -777,8 +786,6 @@ class Store:
 
 
     def reserve_utxo(self, tx_id, idx):
-        if self.db_online is False:
-            return None
         return self.db.exec_sql(
             self.domain_id,
             NAME_OF_DB,
@@ -795,13 +802,6 @@ class Store:
         for ref in tx.references:
             if ref.asset_group_id == self.mint_id:
                 self.reserve_utxo(ref.transaction_id, ref.event_index_in_ref)
-
-
-    '''
-    mainly for testing purposes.
-    '''
-    def set_db_online(self, is_online=True):
-        self.db_online = is_online
 
 
     def set_condition(self, condition, update=False, keypair=None,
@@ -863,8 +863,6 @@ class Store:
 
 
     def take_tx(self, tx_id):
-        if self.db_online is False:
-            return None
         rows = self.db.exec_sql(
             self.domain_id,
             NAME_OF_DB,
@@ -874,32 +872,36 @@ class Store:
         if len(rows) <= 0:
             return None
         tx, fmt = bbclib.deserialize(rows[0][0])
-        if self.independent:
-            self.db.exec_sql(
-                self.domain_id,
-                NAME_OF_DB,
-                'delete from token_tx_id_table where tx_id=?',
-                tx_id
-            )
         return tx
 
 
     def write_utxo(self, user_id, tx_id, idx, asset_body, is_single):
-        if self.db_online is False:
-            return
-        self.db.exec_sql(
+
+        Store.lock.acquire()
+
+        rows = self.db.exec_sql(
             self.domain_id,
             NAME_OF_DB,
-            'insert into token_utxo_table values (?, ?, ?, ?, ?, ?, ?, ?)',
-            self.mint_id,
-            user_id,
+            'select rowid from token_utxo_table where tx_id=? and event_idx=?',
             tx_id,
-            idx,
-            asset_body,
-            is_single,
-            ST_FREE,
-            int(time.time())
+            idx
         )
+        if len(rows) <= 0:
+            self.db.exec_sql(
+                self.domain_id,
+                NAME_OF_DB,
+                'insert into token_utxo_table values (?, ?, ?, ?, ?, ?, ?, ?)',
+                self.mint_id,
+                user_id,
+                tx_id,
+                idx,
+                asset_body,
+                is_single,
+                ST_FREE,
+                int(time.time())
+            )
+
+        Store.lock.release()
 
 
 class BBcMint:

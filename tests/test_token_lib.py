@@ -993,7 +993,6 @@ def test_mint_sign_requested():
     user_b_id, keypairs_b = idPubkeyMap.create_user_id(num_pubkeys=1)
 
     mint_a = token_lib.BBcMint(domain_id, mint_id, user_a_id, idPubkeyMap)
-    mint_a.store.set_db_online(False)
 
     mint.set_keypair(keypairs[0])
 
