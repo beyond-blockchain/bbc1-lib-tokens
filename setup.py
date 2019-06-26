@@ -39,7 +39,7 @@ bbc1_classifiers = [
 
 setup(
     name='bbc1-lib-tokens',
-    version='0.12',
+    version='0.12.1',
     description='Token library of Beyond Blockchain One',
     long_description=readme,
     url='https://github.com/beyond-blockchain/bbc1-lib-tokens',
