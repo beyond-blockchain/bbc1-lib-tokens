@@ -877,6 +877,8 @@ def test_store():
     assert store.get_condition() == 0
     assert store.get_currency_spec() == currency_spec
 
+    assert store.store_ids[0] != store.store_ids[1]
+
 
 def test_mint():
 
