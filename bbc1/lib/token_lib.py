@@ -708,7 +708,7 @@ class Store:
     def get_store_id(self, seed):
         dat = bytearray(self.mint_id)
         dat.extend(seed.encode())
-        return hashlib.sha256(bytes()).digest()
+        return hashlib.sha256(bytes(dat)).digest()
 
 
     def get_tx(self, tx_id):
