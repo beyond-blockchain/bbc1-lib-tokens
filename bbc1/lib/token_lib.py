@@ -808,21 +808,21 @@ class Store:
 
 
     def set_condition(self, condition, update=False, keypair=None,
-            idPublickeyMap=None):
+            idPublickeyMap=None, label=None):
         return self.set_mint_data(Store.IDX_CONDITION,
                 ConditionAssetBody(condition).serialize(), update, keypair,
-                idPublickeyMap)
+                idPublickeyMap, label=label)
 
 
     def set_currency_spec(self, currency_spec, update=False, keypair=None,
-            idPublickeyMap=None):
+            idPublickeyMap=None, label=None):
         return self.set_mint_data(Store.IDX_CURRENCY_SPEC,
                 CurrencySpecAssetBody(currency_spec).serialize(), update,
-                keypair, idPublickeyMap)
+                keypair, idPublickeyMap, label=label)
 
 
     def set_mint_data(self, index, asset_body, update=False, keypair=None,
-            idPublickeyMap=None):
+            idPublickeyMap=None, label=None):
         store_id = self.store_ids[index]
 
         if update:
@@ -838,6 +838,10 @@ class Store:
         tx.events[0].asset_group_id = self.mint_id
         tx.events[0].asset.add(user_id=store_id, asset_body=asset_body)
         tx.events[0].add(mandatory_approver=self.mint_id)
+
+        if label is not None:
+            tx.add(event=label.get_event())
+
         if reftx is None:
             tx.add(witness=bbclib.BBcWitness())
             tx.witness.add_witness(self.mint_id)
@@ -962,7 +966,8 @@ class BBcMint:
         return # FIXME: implement this
 
 
-    def issue(self, to_user_id, amount, time_of_origin=None, keypair=None):
+    def issue(self, to_user_id, amount, time_of_origin=None, keypair=None,
+            label=None):
         if self.user_id != self.mint_id:
             raise RuntimeError('issuer must be the mint')
 
@@ -975,6 +980,10 @@ class BBcMint:
                 self.currency_spec.variation_specs).serialize())
         tx.events[0].add(mandatory_approver=self.mint_id)
         tx.events[0].add(mandatory_approver=to_user_id)
+
+        if label is not None:
+            tx.add(event=label.get_event())
+
         tx.add(witness=bbclib.BBcWitness())
         tx.witness.add_witness(self.mint_id)
 
@@ -999,16 +1008,17 @@ class BBcMint:
 #    def refund(self, from_user_id, to_user_id, amount):
 
 
-    def set_condition(self, condition, update=False, keypair=None):
+    def set_condition(self, condition, update=False, keypair=None, label=None):
         self.condition = condition
         return self.store.set_condition(condition, update, keypair,
-                self.idPublickeyMap)
+                self.idPublickeyMap, label=label)
 
 
-    def set_currency_spec(self, currency_spec, update=False, keypair=None):
+    def set_currency_spec(self, currency_spec, update=False, keypair=None,
+            label=None):
         self.currency_spec = currency_spec
         return self.store.set_currency_spec(currency_spec, update, keypair,
-                self.idPublickeyMap)
+                self.idPublickeyMap, label=label)
 
 
     def set_keypair(self, keypair):
@@ -1022,10 +1032,10 @@ class BBcMint:
 
     def swap(self, counter_mint, this_user_id, that_user_id,
                 this_amount, that_amount, keypair_this=None, keypair_that=None,
-                keypair_mint=None, keypair_counter_mint=None):
+                keypair_mint=None, keypair_counter_mint=None, label=None):
         tx = self.transfer(this_user_id, that_user_id, this_amount)
         counter_mint.transfer(that_user_id, this_user_id, that_amount,
-                transaction=tx)
+                transaction=tx, label=label)
 
         if keypair_this is None:
             return tx
@@ -1062,7 +1072,7 @@ class BBcMint:
 
 
     def transfer(self, from_user_id, to_user_id, amount, transaction=None,
-            keypair_from=None, keypair_mint=None):
+            keypair_from=None, keypair_mint=None, label=None):
         if transaction is None:
             tx = bbclib.BBcTransaction()
             base_refs = 0
@@ -1137,6 +1147,9 @@ class BBcMint:
                 t = spec_tuples[i]
                 body = BaseAssetBody(BaseAssetBody.T_CHANGE, t[1], t[2], t[3])
                 tx.add(event=self.make_event(t[4], from_user_id, body))
+
+        if label is not None:
+            tx.add(event=label.get_event())
 
         if keypair_from is None:
             return tx

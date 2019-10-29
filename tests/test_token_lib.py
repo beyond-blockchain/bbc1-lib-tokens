@@ -4,6 +4,7 @@ import time
 
 sys.path.extend(["../"])
 from bbc1.lib import id_lib, token_lib
+from bbc1.lib.app_support_lib import TransactionLabel
 from bbc1.core import bbc_app
 from bbc1.core import bbclib
 from bbc1.core.bbc_config import DEFAULT_CORE_PORT
@@ -1034,8 +1035,21 @@ def test_swap():
     })
 
     mint = token_lib.BBcMint(domain_id, mint_id, mint_id, idPubkeyMap)
-    mint.set_condition(0, keypair=keypairs[0])
-    mint.set_currency_spec(currency_spec, keypair=keypairs[0])
+
+    label_group_id = bbclib.get_new_id('label_group', include_timestamp=False)
+    label_id = TransactionLabel.create_label_id('label1', '3')
+    label = TransactionLabel(label_group_id, label_id=label_id)
+
+    tx = mint.set_condition(0, keypair=keypairs[0], label=label)
+
+    assert label.get_label_id(tx) == label_id
+
+    label.label_id = TransactionLabel.create_label_id('label2', '3')
+
+    tx = mint.set_currency_spec(currency_spec, keypair=keypairs[0],
+            label=label)
+
+    assert label.is_labeled(tx)
 
     counter_mint = token_lib.BBcMint(domain_id, mint_id_counter,
             mint_id_counter, idPubkeyMap)
@@ -1046,16 +1060,25 @@ def test_swap():
     user_a_id, keypairs_a = idPubkeyMap.create_user_id(num_pubkeys=1)
     user_b_id, keypairs_b = idPubkeyMap.create_user_id(num_pubkeys=1)
 
-    mint.issue(user_a_id, 1000, keypair=keypairs[0])
+    label.label_id = TransactionLabel.create_label_id('label3', '3')
+
+    tx = mint.issue(user_a_id, 1000, keypair=keypairs[0], label=label)
+
+    assert label.is_labeled(tx)
+
     counter_mint.issue(user_b_id, 3000, keypair=keypairs_counter[0])
 
     assert mint.get_balance_of(user_a_id) == 1000
     assert counter_mint.get_balance_of(user_b_id) == 3000
 
-    mint.swap(counter_mint, user_a_id, user_b_id, 100, 300,
+    label.label_id = TransactionLabel.create_label_id('label4', '3')
+
+    tx = mint.swap(counter_mint, user_a_id, user_b_id, 100, 300,
                     keypair_this=keypairs_a[0], keypair_that=keypairs_b[0],
                     keypair_mint=keypairs[0],
-                    keypair_counter_mint=keypairs_counter[0])
+                    keypair_counter_mint=keypairs_counter[0], label=label)
+
+    assert label.is_labeled(tx)
 
     assert mint.get_balance_of(user_a_id) == 900
     assert mint.get_balance_of(user_b_id) == 100
@@ -1067,8 +1090,17 @@ def test_swap():
     assert mint.get_balance_of(user_a_id) == 910
     assert mint.get_balance_of(user_b_id) == 100
 
-    mint.transfer(user_a_id, user_b_id, 100,
-                    keypair_from=keypairs_a[0], keypair_mint=keypairs[0])
+    label.label_id = TransactionLabel.create_label_id('label5', '3')
+
+    tx = mint.transfer(user_a_id, user_b_id, 100,
+            keypair_from=keypairs_a[0], keypair_mint=keypairs[0],
+            label=label)
+
+    assert label.is_labeled(tx)
+
+    label.label_id = TransactionLabel.create_label_id('label6', '3')
+
+    assert label.is_labeled(tx) == False
 
     assert mint.get_balance_of(user_a_id) == 810
     assert mint.get_balance_of(user_b_id) == 200
