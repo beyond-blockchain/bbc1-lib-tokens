@@ -1085,5 +1085,8 @@ def test_swap():
     assert counter_mint.get_balance_of(user_a_id) == 210
     assert counter_mint.get_balance_of(user_b_id) == 2800
 
+    mint.close()
+    counter_mint.close()
+
 
 # end of tests/test_token_lib.py

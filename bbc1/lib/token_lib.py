@@ -631,6 +631,10 @@ class Store:
         )
 
 
+    def close(self):
+        self.db.close_db(self.domain_id, NAME_OF_DB)
+
+
     def delete_utxo(self, tx_id, idx):
         return self.db.exec_sql(
             self.domain_id,
@@ -929,6 +933,11 @@ class BBcMint:
 
         self.store = Store(self.domain_id, self.mint_id, self.app)
         self.app.request_insert_completion_notification(self.mint_id)
+
+
+    def close(self):
+        self.app.unregister_from_core()
+        self.store.close()
 
 
     def get_balance_of(self, user_id, eval_time=None):
