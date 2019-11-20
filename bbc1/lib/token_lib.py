@@ -29,7 +29,7 @@ from bbc1.core import logger, bbc_app
 from bbc1.core.bbc_error import *
 from bbc1.core.message_key_types import KeyType
 from bbc1.core.bbc_config import DEFAULT_CORE_PORT
-from bbclib.libs import bbclib_utils
+from bbclib.libs import bbclib_binary
 
 NAME_OF_DB = 'token_db'
 
@@ -69,9 +69,9 @@ class Fraction(fractions.Fraction):
     @staticmethod
     def from_serialized_data(ptr, data):
         try:
-            ptr, sign = bbclib_utils.get_n_byte_int(ptr, 1, data)
-            ptr, numerator = bbclib_utils.get_n_byte_int(ptr, 2, data)
-            ptr, denominator = bbclib_utils.get_n_byte_int(ptr, 2, data)
+            ptr, sign = bbclib_binary.get_n_byte_int(ptr, 1, data)
+            ptr, numerator = bbclib_binary.get_n_byte_int(ptr, 2, data)
+            ptr, denominator = bbclib_binary.get_n_byte_int(ptr, 2, data)
         except:
             raise
         if sign > 0:
@@ -85,12 +85,12 @@ class Fraction(fractions.Fraction):
 
     def serialize(self):
         if self.numerator < 0:
-            dat = bytearray(bbclib_utils.to_1byte(1))
-            dat.extend(bbclib_utils.to_2byte(-self.numerator))
+            dat = bytearray(bbclib_binary.to_1byte(1))
+            dat.extend(bbclib_binary.to_2byte(-self.numerator))
         else:
-            dat = bytearray(bbclib_utils.to_1byte(0))
-            dat.extend(bbclib_utils.to_2byte(self.numerator))
-        dat.extend(bbclib_utils.to_2byte(self.denominator))
+            dat = bytearray(bbclib_binary.to_1byte(0))
+            dat.extend(bbclib_binary.to_2byte(self.numerator))
+        dat.extend(bbclib_binary.to_2byte(self.denominator))
         return bytes(dat)
 
 
@@ -150,12 +150,12 @@ class Variation:
     @staticmethod
     def from_serialized_data(ptr, data):
         try:
-            ptr, condition = bbclib_utils.get_n_byte_int(ptr, 1, data)
-            ptr, type = bbclib_utils.get_n_byte_int(ptr, 1, data)
+            ptr, condition = bbclib_binary.get_n_byte_int(ptr, 1, data)
+            ptr, type = bbclib_binary.get_n_byte_int(ptr, 1, data)
             ptr, rate = Fraction.from_serialized_data(ptr, data)
             ptr, rate_to_stop = Fraction.from_serialized_data(ptr, data)
-            ptr, time_unit = bbclib_utils.get_n_byte_int(ptr, 8, data)
-            ptr, expire_after = bbclib_utils.get_n_byte_int(ptr, 8, data)
+            ptr, time_unit = bbclib_binary.get_n_byte_int(ptr, 8, data)
+            ptr, expire_after = bbclib_binary.get_n_byte_int(ptr, 8, data)
         except:
             raise
         return ptr, Variation(condition, type, rate, rate_to_stop, time_unit,
@@ -192,12 +192,12 @@ class Variation:
 
 
     def serialize(self):
-        dat = bytearray(bbclib_utils.to_1byte(self.condition))
-        dat.extend(bbclib_utils.to_1byte(self.type))
+        dat = bytearray(bbclib_binary.to_1byte(self.condition))
+        dat.extend(bbclib_binary.to_1byte(self.type))
         dat.extend(self.rate.serialize())
         dat.extend(self.rate_to_stop.serialize())
-        dat.extend(bbclib_utils.to_8byte(self.time_unit))
-        dat.extend(bbclib_utils.to_8byte(self.expire_after))
+        dat.extend(bbclib_binary.to_8byte(self.time_unit))
+        dat.extend(bbclib_binary.to_8byte(self.expire_after))
         return bytes(dat)
 
 
@@ -225,10 +225,10 @@ class BaseAssetBody:
     @staticmethod
     def from_serialized_data(ptr, data):
         try:
-            ptr, type = bbclib_utils.get_n_byte_int(ptr, 1, data)
-            ptr, value_specified = bbclib_utils.get_n_byte_int(ptr, 8, data)
-            ptr, time_of_origin = bbclib_utils.get_n_byte_int(ptr, 8, data)
-            ptr, count = bbclib_utils.get_n_byte_int(ptr, 1, data)
+            ptr, type = bbclib_binary.get_n_byte_int(ptr, 1, data)
+            ptr, value_specified = bbclib_binary.get_n_byte_int(ptr, 8, data)
+            ptr, time_of_origin = bbclib_binary.get_n_byte_int(ptr, 8, data)
+            ptr, count = bbclib_binary.get_n_byte_int(ptr, 1, data)
             variation_specs = []
             for i in range(count):
                 ptr, variation = Variation.from_serialized_data(ptr, data)
@@ -304,10 +304,10 @@ class BaseAssetBody:
 
 
     def serialize(self):
-        dat = bytearray(bbclib_utils.to_1byte(self.type))
-        dat.extend(bbclib_utils.to_8byte(self.value_specified))
-        dat.extend(bbclib_utils.to_8byte(self.time_of_origin))
-        dat.extend(bbclib_utils.to_1byte(len(self.variation_specs)))
+        dat = bytearray(bbclib_binary.to_1byte(self.type))
+        dat.extend(bbclib_binary.to_8byte(self.value_specified))
+        dat.extend(bbclib_binary.to_8byte(self.time_of_origin))
+        dat.extend(bbclib_binary.to_1byte(len(self.variation_specs)))
         for variation in self.variation_specs:
             dat.extend(variation.serialize())
         return bytes(dat)
@@ -505,20 +505,20 @@ class CurrencySpec:
     @staticmethod
     def from_serialized_data(ptr, data):
         try:
-            ptr, version = bbclib_utils.get_n_byte_int(ptr, 2, data)
-            ptr, size = bbclib_utils.get_n_byte_int(ptr, 2, data)
-            ptr, v = bbclib_utils.get_n_bytes(ptr, size, data)
+            ptr, version = bbclib_binary.get_n_byte_int(ptr, 2, data)
+            ptr, size = bbclib_binary.get_n_byte_int(ptr, 2, data)
+            ptr, v = bbclib_binary.get_n_bytes(ptr, size, data)
             name = v.decode()
-            ptr, size = bbclib_utils.get_n_byte_int(ptr, 1, data)
-            ptr, v = bbclib_utils.get_n_bytes(ptr, size, data)
+            ptr, size = bbclib_binary.get_n_byte_int(ptr, 1, data)
+            ptr, v = bbclib_binary.get_n_bytes(ptr, size, data)
             symbol = v.decode()
-            ptr, decimal = bbclib_utils.get_n_byte_int(ptr, 1, data)
-            ptr, count = bbclib_utils.get_n_byte_int(ptr, 1, data)
+            ptr, decimal = bbclib_binary.get_n_byte_int(ptr, 1, data)
+            ptr, count = bbclib_binary.get_n_byte_int(ptr, 1, data)
             variation_specs = []
             for i in range(count):
                 ptr, variation = Variation.from_serialized_data(ptr, data)
                 variation_specs.append(variation)
-            ptr, v = bbclib_utils.get_n_byte_int(ptr, 2, data)
+            ptr, v = bbclib_binary.get_n_byte_int(ptr, 2, data)
             option_witnesses_required = \
                     v & CurrencySpec.O_BIT_WITNESSES_REQUIRED != 0
             option_expiration_rebased = \
@@ -536,16 +536,16 @@ class CurrencySpec:
 
 
     def serialize(self):
-        dat = bytearray(bbclib_utils.to_2byte(self.version))
+        dat = bytearray(bbclib_binary.to_2byte(self.version))
         string = self.name.encode()
-        dat.extend(bbclib_utils.to_2byte(len(string)))
+        dat.extend(bbclib_binary.to_2byte(len(string)))
         dat.extend(string)
         string = self.symbol.encode()
-        dat.extend(bbclib_utils.to_1byte(len(string)))
+        dat.extend(bbclib_binary.to_1byte(len(string)))
         dat.extend(string)
-        dat.extend(bbclib_utils.to_1byte(self.decimal))
+        dat.extend(bbclib_binary.to_1byte(self.decimal))
 
-        dat.extend(bbclib_utils.to_1byte(len(self.variation_specs)))
+        dat.extend(bbclib_binary.to_1byte(len(self.variation_specs)))
         for variation in self.variation_specs:
             dat.extend(variation.serialize())
 
@@ -556,7 +556,7 @@ class CurrencySpec:
             options |= CurrencySpec.O_BIT_EXPIRATION_REBASED
         if self.option_conditions_irreversible:
             options |= CurrencySpec.O_BIT_CONDITIONS_IRREVERSIBLE
-        dat.extend(bbclib_utils.to_2byte(options))
+        dat.extend(bbclib_binary.to_2byte(options))
         return bytes(dat)
 
 
@@ -569,14 +569,14 @@ class ConditionAssetBody:
     @staticmethod
     def from_serialized_data(ptr, data):
         try:
-            ptr, condition = bbclib_utils.get_n_byte_int(ptr, 1, data)
+            ptr, condition = bbclib_binary.get_n_byte_int(ptr, 1, data)
         except:
             raise
         return ptr, ConditionAssetBody(condition)
 
 
     def serialize(self):
-        dat = bytearray(bbclib_utils.to_1byte(self.condition))
+        dat = bytearray(bbclib_binary.to_1byte(self.condition))
         return bytes(dat)
 
 
@@ -858,7 +858,7 @@ class Store:
         sig = transaction.sign(
                 private_key=keypair.private_key,
                 public_key=keypair.public_key)
-        transaction.add_signature(user_id=user_id, signature=sig)
+        transaction.add_signature_object(user_id=user_id, signature=sig)
         return sig
 
 
@@ -1065,7 +1065,7 @@ class BBcMint:
                 if res[KeyType.status] < ESUCCESS:
                     raise RuntimeError(res[KeyType.reason].decode())
                 result = res[KeyType.result]
-                tx.add_signature(result[1], signature=result[2])
+                tx.add_signature_object(result[1], signature=result[2])
 
         return self.store.sign_and_insert(tx, this_user_id, keypair_this,
                 self.idPublickeyMap)
@@ -1160,7 +1160,7 @@ class BBcMint:
             if res[KeyType.status] < ESUCCESS:
                 raise RuntimeError(res[KeyType.reason].decode())
             result = res[KeyType.result]
-            tx.add_signature(self.mint_id, signature=result[2])
+            tx.add_signature_object(self.mint_id, signature=result[2])
             return self.store.sign_and_insert(tx, from_user_id, keypair_from,
                     self.idPublickeyMap)
 

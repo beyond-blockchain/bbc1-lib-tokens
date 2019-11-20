@@ -21,7 +21,9 @@ class MyInstall(install):
             install.run(self)
 
 
-bbc1_requires = []
+bbc1_requires = [
+                    'py-bbclib>=1.6'
+                ]
 
 bbc1_packages = [
                  'bbc1',
@@ -39,7 +41,7 @@ bbc1_classifiers = [
 
 setup(
     name='bbc1-lib-tokens',
-    version='0.15',
+    version='0.16',
     description='Token library of Beyond Blockchain One',
     long_description=readme,
     url='https://github.com/beyond-blockchain/bbc1-lib-tokens',
